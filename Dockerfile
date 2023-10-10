@@ -13,7 +13,7 @@ RUN apk add py3-pip
 RUN pip3 install s3cmd
 
 #RUN mkdir /home/intake #vai ser criada pelo Python
-#RUN mkdir /home/output
+#RUN mkdir /home/output #criada pelo Python
 RUN mkdir /home/backup
 
 #Object Storage Configuration File
