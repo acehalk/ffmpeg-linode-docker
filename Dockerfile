@@ -12,16 +12,15 @@ RUN apk add py3-pip
 #Install s3cmd to send encoded files to Object StorGihuage
 RUN pip3 install s3cmd
 
-#RUN mkdir /home/intake #vai ser criada pelo Python
-#RUN mkdir /home/output #criada pelo Python
+#Backup for FFMPEG default configuration
 RUN mkdir /home/backup
 
-#Object Storage Configuration File
+#Object Storage Configuration File - REMEMBER TO EDIT IT
 COPY /source/.s3cfg /root/
 
 COPY /source/FFMPEG_bash.sh /home/backup
 COPY /source/FFMPEG_bash.sh /home
 COPY /source/script.py /home
 
+#Execute Python Script to fetch data from OBJ Storage folder to
 CMD python3 home/script.py
-#CMD top
