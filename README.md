@@ -39,10 +39,41 @@ The Master Playlist will have all the 4 playlists (one for each stream)
 ```
 ffmpeg -i "INTAKE" -loglevel debug -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -c:v libx264 -crf 22 -c:a aac -ar 48000 -filter:v:0 scale=w=480:h=360  -maxrate:v:0 600k -b:a:0 64k -filter:v:1 scale=w=640:h=480  -maxrate:v:1 800k -b:a:1 128k -filter:v:2 scale=w=1280:h=720 -maxrate:v:2 1M -b:a:2 128k -filter:v:3 scale=w=1920:h=1080 -maxrate:v:3 2M -b:a:3 320k -var_stream_map "v:0,a:0,name:360p v:1,a:1,name:480p v:2,a:2,name:720p v:3,a:3,name:1080p" -force_key_frames:v "expr:gte(t,n_forced*2)" -preset slow -hls_list_size 0 -threads 0 -f hls -hls_playlist_type event -hls_time 6 -hls_flags independent_segments -master_pl_name "MASTER_PL" "OUTPUT"
 ```
+This command is stored in the [FFMPEG_bash.sh](source/FFMPEG_bash.sh) file, and is changed for every video file during execution
 
+# Code explanation
 
+## Python Script
+
+This is the [script.py](source/script.py) file
+
+### Libraries
+```python
+import subprocess
+import os
+
+os.system("mkdir -p /home/output/")
+```
+_subprocess_ is imported to allow the execution of the [FFMPEG_code](source/FFMPEG_bash.sh) without stopping the container after the execution
+_os_ is imported to allow the manipulation of files/paths
+
+### Global Variables
 
 ```python
-print("www.google.com")
+bucketName = "vod-videos" #Bucket (object Storage) Created on Akamai Cloud
+bucket_intakeFolder = "Intake" #folder inside bucketName (set above) that will have folders with .mp4 files
+bucket_outputFolder = "Output" # folder inside bucketName (set above) that will have folders with the converted files
+#FFMPEG output folders - Change not required
+container_intakeRootFolder = "/home/" #Were in the container the MP4 Videos will be downloaded to (need to end on "/")
+container_intakeFolder = container_intakeRootFolder + bucket_intakeFolder #after dowloading the video will be stored on a folder with the name of the Object storage folder name
+container_outputFolder = "/home/output" #Were in the container the converted Videos will be stored
 ```
+Keep in mind the folder's expected schema, displayed on the first picture [(the SmartArt)](README.md#introduction)
+Here we set:
+* The name of the Bucket (Orange box) with the variable: ```bucketName```
+* The control folders (Yellow boxes) with the variables: ```bucket_intakeFolder``` and ```bucket_outputFolder```
+* The FFMPEG root intake folder (not in diagram) with the variable ```container_intakeRootFolder```
+* The FFMPEG input folder (not in diagram), when dowloading the files from the Object Storage, a new folder with the name of the object storage Input Folder (```bucket_intakeFolder``` variable) will be created on the ```container_intakeRootFolder``` path, that will be the path that FFMPEG needs to gather the MP4 files from. So the variable ```container_intakeFolder``` is set as the concatenation of ```container_intakeRootFolder``` and ```bucket_intakeFolder```
+* The FFMPEG ouput folder (not in diagram), with the variable ```container_outputFolder```, after the conversion the files on that folder will be uploaded to the Object Storage Output folder (```bucket_outputFolder``` variable)
+
 
