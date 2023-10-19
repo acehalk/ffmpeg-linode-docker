@@ -131,8 +131,8 @@ for pastas in listaDiretorios:
             for arquivos in os.listdir(diretorioTrabalho):
                 os.system("cp /home/FFMPEG_bash.sh /home/edit_bash.sh") #copy the FFMPEG config backup file to a new place to be edited in every iteration
                 os.system("chmod 777 /home/edit_bash.sh") #IMPORTANT!
-                FFMPEG_Config(os.path.join(diretorioTrabalho,arquivos),"/home/output/" + pastas + "/Stream-%v.m3u8","/home/edit_bash.sh")#Intake Path, Output Path,FFMPEG script to be edited path, Master playlist name
-                os.system("mkdir -p /home/output/" + pastas)
+                FFMPEG_Config(os.path.join(diretorioTrabalho,arquivos),container_outputFolder + pastas + "/Stream-%v.m3u8","/home/edit_bash.sh")#Intake Path, Output Path,FFMPEG script to be edited path, Master playlist name
+                os.system("mkdir -p " + container_outputFolder + pastas)
                 subprocess.call("/home/edit_bash.sh", shell=True)  #Runs FFMPEG, need to be a subprocess not to stop the container after execution
                 os.system("rm /home/edit_bash.sh") #remove the FFMPEG config file Python edited in this iteration
 
@@ -141,8 +141,45 @@ print("Transcode Completed")
 print("\n")
 ```
 This part is responsible for the transcoding itself using FFMPEG. Again keep in mind the **required** folder schema described on the first picture [(the SmartArt)](README.md#introduction) 
-First we list all the directories in the ```container_intakeFolder``` in my case /home/Intake. Then this list is iterated and then cheked if the appended path from ```container_intakeFolder``` and the iterated list string (```pastas```) form a directory or not, for example: /home/Intake/Gameplay-LeagueOfLegends, in the [(SmartArt)](README.md#introduction) diagram we're now checking the folders in blue , if it's not a directory the file is ignorated.
+First we list all the directories in the ```container_intakeFolder``` in my case /home/Intake. Then this list is iterated and then cheked if the appended path from ```container_intakeFolder``` and the iterated list string (```pastas```) form a directory or not, for example: _/home/Intake/Gameplay-LeagueOfLegends_, in the [(SmartArt)](README.md#introduction) diagram we're now checking the folders in blue , if it's not a directory the file is ignorated.
 
-Once again we list all the files inside the now confirmed directory, in the [(SmartArt)](README.md#introduction) diagram we're now checking the files in green, for example: /home/Intake/Gameplay-LeagueOfLegends/RekSai-Jungle-02-12-23.mp4
+Once again we list all the files inside the now confirmed directory, in the [(SmartArt)](README.md#introduction) diagram we're now checking the files in green, for example: _/home/Intake/Gameplay-LeagueOfLegends/RekSai-Jungle-02-12-23.mp4_
+It now copy the base [FFMPEG script](source/FFMPEG_bash.sh) and create a new version that will be edited in this iteration, as we're copying a Shell file the Linux CHMOD with execute (X) permission is required.
+The FFMPEG script is edited with this iteration information.
 
+A new folder is created inside the output folder to store the converted files, this will new folder will be named as the name of the content folder the MP4 was stored (folder in blue in the diagram). in my example:
+* Input: /home/Intake/**Gameplay-LeagueOfLegends**/RekSai-Jungle-02-12-23.mp4
+* Output: /home/Output/**Gameplay-LeagueOfLegends**/*
+FFMPEG is finally executed as a subprocess to not stop the container after execution
+After convertion the edited FFMPEG scipt is removed.
+
+### Upload to Object Storage
+
+```python
+listaDiretorios = os.listdir(container_outputFolder)#FFMPEG output path
+for pastas in listaDiretorios:
+    diretorioTrabalho = os.path.join(container_outputFolder,pastas)
+
+    if os.path.isdir(diretorioTrabalho):
+
+        for arquivos in os.listdir(diretorioTrabalho):
+            file = os.path.join(diretorioTrabalho, arquivos)
+            if os.path.isfile(file):
+                os.system("s3cmd put --acl-public " + file +" s3://vod-videos/" + bucket_outputFolder + "/" + pastas + "/")#upload as public file
+
+print("\n")
+print("Upload Completed")
+print("\n")
+
+os.system("rm -r " + container_intakeFolder)#Remove the files downloaded from object storage
+os.system("rm -r " + container_outputFolder)#Remove the converted files after object storage upload 
+```
+After the conversion we need to upload the files to the object storage, this way we can deliver them to our endusers.
+The FOR loop is similar to the Transcoding part
+
+First we list all the directories in the ```container_outputFolder``` in my case /home/output. Then this list is iterated and then cheked if the appended path from ```container_outputFolder``` and the iterated list string (```pastas```) form a directory or not, for example: _/home/output/Gameplay-LeagueOfLegends_, in the [(SmartArt)](README.md#introduction) diagram we're now checking the folders in blue in the output side, if it's not a directory the file is ignorated.
+
+Once again we list all the files inside the now confirmed directory, in the [(SmartArt)](README.md#introduction) diagram we're now checking the files in green in the output side, for example: _/home/output/Gameplay-LeagueOfLegends/Stream-720p321.ts_
+The files (Master Playlist, the manifests for every exported Bitrate/Resolution, and the Chunks (.ts files)) are then uploaded to the Bucket as **PUBLIC** files
+Finally the downloaded and uploaded files from/to the object storage are removed to save space in the container
 
