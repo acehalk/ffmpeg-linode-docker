@@ -182,4 +182,3 @@ First we list all the directories in the ```container_outputFolder``` in my case
 Once again we list all the files inside the now confirmed directory, in the [(SmartArt)](README.md#introduction) diagram we're now checking the files in green in the output side, for example: _/home/output/Gameplay-LeagueOfLegends/Stream-720p321.ts_
 The files (Master Playlist, the manifests for every exported Bitrate/Resolution, and the Chunks (.ts files)) are then uploaded to the Bucket as **PUBLIC** files
 Finally the downloaded and uploaded files from/to the object storage are removed to save space in the container
-
